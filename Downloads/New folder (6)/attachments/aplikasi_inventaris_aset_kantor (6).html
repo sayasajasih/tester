@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventaris Aset Kantor</title>
+    
+    <!-- Load Google Fonts: Plus Jakarta Sans for a premium modern look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Custom configuration for Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'glow': '0 4px 20px -2px rgba(79, 70, 229, 0.25)',
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.4s ease-out forwards',
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #f8fafc;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Print Styles for General Dashboard */
+        @media print {
+            @page { margin: 1cm; size: auto; }
+            body { 
+                background: white !important;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+            }
+            .print-hide-shadow { box-shadow: none !important; border: none !important; }
+        }
+
+        /* Specific Print Styles when printing Single Asset Detail */
+        @media print {
+            body.print-detail-mode nav,
+            body.print-detail-mode main,
+            body.print-detail-mode #modalBackdrop,
+            body.print-detail-mode #formModal,
+            body.print-detail-mode #deleteModal,
+            body.print-detail-mode #imageViewerModal {
+                display: none !important;
+            }
+
+            body.print-detail-mode #detailModal {
+                position: relative !important;
+                display: block !important;
+                opacity: 1 !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            body.print-detail-mode #detailModal > div {
+                transform: none !important;
+                box-shadow: none !important;
+                border: none !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                max-height: none !important;
+                overflow: visible !important;
+            }
+
+            body.print-detail-mode .modal-action-buttons {
+                display: none !important;
+            }
+
+            body.print-detail-mode .detail-print-header {
+                display: block !important;
+            }
+
+            /* --- TAMBAHAN BARU: Memperkecil gambar saat print --- */
+            body.print-detail-mode #detailImage,
+            body.print-detail-mode #detailNoImagePlaceholder {
+                max-height: 150px !important; /* Membatasi tinggi gambar maksimal 15cm */
+                width: auto !important;
+                object-fit: contain !important;
+                margin: 0 auto !important;
+            }
+
+            /* Memastikan layout gambar dan form detail tetap bersebelahan (kiri-kanan) di kertas PDF */
+            body.print-detail-mode #detailModalBody > div {
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: flex-start !important;
+                gap: 1.5rem !important;
+            }
+
+            body.print-detail-mode .md\:w-1\/3 {
+                width: 25% !important; /* Kolom gambar mengambil ruang lebih sedikit */
+            }
+
+            body.print-detail-mode .md\:w-2\/3 {
+                width: 75% !important; /* Kolom teks mengambil sisa ruang */
+            }
+            /* --------------------------------------------------- */
+        }
+    </style>
+</head>
+<body class="text-slate-700 antialiased min-h-screen flex flex-col selection:bg-brand-100 selection:text-brand-900 transition-colors">
+
+    <nav class="bg-white/70 backdrop-blur-md border-b border-white/50 shadow-sm sticky top-0 z-30 print:hidden transition-all">
+        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 bg-gradient-to-br from-brand-500 to-indigo-600 rounded-xl flex items-center justify-center text-white shadow-glow">
+                        <i class="ph-duotone ph-buildings text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">InventarisKu</h1>
+                        <p class="text-xs font-medium text-slate-500 leading-none">Manajemen Aset Modern</p>
+                    </div>
+                </div>
+                <div class="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-100/50 rounded-full border border-slate-200/50 text-sm font-medium text-slate-600">
+                    <i class="ph-duotone ph-calendar-blank text-brand-500"></i>
+                    <span id="currentDateDisplay"></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full print:py-0 print:px-0 print:max-w-full">
+        
+        <!-- Print Header for Full List -->
+        <div class="hidden print:block mb-8 text-center" id="dashboardPrintHeader">
+            <h1 class="text-3xl font-extrabold text-slate-900 mb-2">Laporan Inventaris Aset</h1>
+            <p class="text-slate-600 text-sm font-medium" id="printDateDisplay"></p>
+            <div class="w-full h-[2px] bg-slate-800 mt-6 mb-2"></div>
+        </div>
+
+        <div class="mb-8 print:hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Dashboard Aset</h2>
+                <p class="text-slate-500 mt-1 font-medium">Pantau dan kelola kondisi seluruh inventaris Anda.</p>
+            </div>
+            
+            <div class="flex gap-3 w-full md:w-auto">
+                <button onclick="window.print()" class="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 border border-slate-200 text-sm font-semibold rounded-xl text-slate-600 bg-white hover:bg-slate-50 focus:outline-none transition-all shadow-sm">
+                    <i class="ph-duotone ph-printer text-xl"></i> Cetak Daftar
+                </button>
+                <button onclick="openModal('add')" class="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-brand-600 to-indigo-500 hover:from-brand-500 focus:outline-none transition-all shadow-glow hover:-translate-y-0.5">
+                    <i class="ph-bold ph-plus text-lg"></i> Tambah Aset
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 print:hidden">
+            <!-- Total Assets -->
+            <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-soft border border-white p-6 flex items-center gap-5 group hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                <div class="relative h-16 w-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition-colors duration-300">
+                    <i class="ph-duotone ph-package text-3xl"></i>
+                </div>
+                <div class="relative">
+                    <p class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Total Kuantitas</p>
+                    <p class="text-4xl font-extrabold text-slate-800" id="metricTotal">0</p>
+                </div>
+            </div>
+            
+            <!-- Good Condition -->
+            <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-soft border border-white p-6 flex items-center gap-5 group hover:-translate-y-1 transition-all duration-300">
+                <div class="relative h-16 w-16 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-300">
+                    <i class="ph-duotone ph-check-circle text-3xl"></i>
+                </div>
+                <div class="relative">
+                    <p class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Kondisi Baik</p>
+                    <p class="text-4xl font-extrabold text-slate-800" id="metricGood">0</p>
+                </div>
+            </div>
+
+            <!-- Needs Repair -->
+            <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-soft border border-white p-6 flex items-center gap-5 group hover:-translate-y-1 transition-all duration-300">
+                <div class="relative h-16 w-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center group-hover:bg-rose-500 group-hover:text-white transition-colors duration-300">
+                    <i class="ph-duotone ph-wrench text-3xl"></i>
+                </div>
+                <div class="relative">
+                    <p class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Perlu Perbaikan</p>
+                    <p class="text-4xl font-extrabold text-slate-800" id="metricRepair">0</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white/90 backdrop-blur-sm rounded-t-2xl shadow-soft border-x border-t border-white p-5 flex flex-col md:flex-row gap-4 items-center justify-between print:hidden">
+            <div class="flex flex-col md:flex-row gap-3 w-full">
+                <!-- Search -->
+                <div class="relative flex-grow max-w-md group">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                        <i class="ph-duotone ph-magnifying-glass text-xl"></i>
+                    </div>
+                    <input type="text" id="searchInput" class="block w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl bg-slate-50 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm font-medium transition-all" placeholder="Cari nama, register, kode...">
+                </div>
+                
+                <!-- Filters -->
+                <div class="flex flex-wrap md:flex-nowrap gap-3 flex-grow justify-end">
+                    <select id="filterCategory" class="block w-full md:w-auto px-4 py-3 border border-slate-200 bg-slate-50 focus:bg-white rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium transition-all appearance-none cursor-pointer">
+                        <option value="all">Semua Kategori</option>
+                        <option value="Tanah dan Bangunan">Tanah dan Bangunan</option>
+                        <option value="Peralatan dan Mesin">Peralatan dan Mesin</option>
+                        <option value="Aset Tak Berwujud">Aset Tak Berwujud</option>
+                    </select>
+
+                    <select id="filterSubCategory" class="block w-full md:w-auto px-4 py-3 border border-slate-200 bg-slate-50 focus:bg-white rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium transition-all appearance-none cursor-pointer">
+                        <option value="all">Semua Sub Kategori</option>
+                        <!-- Populated by JS -->
+                    </select>
+
+                    <select id="filterYear" class="block w-full md:w-auto px-4 py-3 border border-slate-200 bg-slate-50 focus:bg-white rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium transition-all appearance-none cursor-pointer">
+                        <option value="all">Semua Tahun</option>
+                        <!-- Populated by JS -->
+                    </select>
+
+                    <select id="filterCondition" class="block w-full md:w-auto px-4 py-3 border border-slate-200 bg-slate-50 focus:bg-white rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium transition-all appearance-none cursor-pointer">
+                        <option value="all">Semua Kondisi</option>
+                        <option value="Baik">Baik</option>
+                        <option value="Rusak Ringan">Rusak Ringan</option>
+                        <option value="Rusak Berat">Rusak Berat</option>
+                        <option value="Aktif">Aktif</option>
+                        <option value="Kadaluwarsa (Expired)">Kadaluwarsa (Expired)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-soft border border-white border-t-slate-100 overflow-hidden rounded-b-2xl print:print-hide-shadow print:rounded-none">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-100">
+                    <thead class="bg-slate-50/50 print:bg-transparent print:border-b-2 print:border-slate-800">
+                        <tr>
+                            <th class="px-5 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">ID Aset</th>
+                            <th class="px-5 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Detail Aset & Identitas</th>
+                            <th class="px-5 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Kategori & Sub</th>
+                            <th class="px-5 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Harga Satuan</th>
+                            <th class="px-5 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Qty</th>
+                            <th class="px-5 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Status</th>
+                            <th class="px-5 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-widest print:hidden">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody" class="divide-y divide-slate-50">
+                        <!-- Table rows populated by JS -->
+                    </tbody>
+                </table>
+                
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden flex-col items-center justify-center py-20 px-4 text-center">
+                    <div class="h-24 w-24 bg-slate-50 rounded-full flex items-center justify-center mb-5 border border-slate-100">
+                        <i class="ph-duotone ph-magnifying-glass-minus text-5xl text-slate-300"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Tidak ada data ditemukan</h3>
+                    <p class="text-slate-500 max-w-sm font-medium">Coba sesuaikan filter pencarian Anda atau tambahkan aset baru.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="modalBackdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden transition-opacity opacity-0" aria-hidden="true"></div>
+
+    <!-- ADD/EDIT MODAL -->
+    <div id="formModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 hidden opacity-0 transition-all pointer-events-none">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[95vh] flex flex-col overflow-hidden transform scale-95 transition-transform pointer-events-auto border border-white/20">
+            
+            <div class="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-white/50 backdrop-blur-xl z-10 sticky top-0">
+                <h3 id="modalTitle" class="text-xl font-extrabold text-slate-800 flex items-center gap-3">
+                    <div class="p-2 bg-brand-50 text-brand-600 rounded-xl" id="modalIconContainer">
+                        <i class="ph-bold ph-plus" id="modalIcon"></i>
+                    </div>
+                    <span>Tambah Aset</span>
+                </h3>
+                <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 p-2 rounded-xl transition-colors">
+                    <i class="ph-bold ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <div class="px-8 py-6 overflow-y-auto no-scrollbar bg-slate-50/30">
+                <form id="assetForm" class="space-y-6">
+                    <input type="hidden" id="formId">
+                    
+                    <!-- Form Image -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Foto Aset <span class="text-slate-400 font-normal">(Opsional)</span></label>
+                        <label for="formImage" class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-200 border-dashed rounded-2xl hover:border-brand-500 hover:bg-brand-50/50 transition-all cursor-pointer bg-white">
+                            <div class="space-y-2 text-center w-full">
+                                <img id="imagePreview" src="" alt="Preview" class="mx-auto h-36 w-auto object-contain hidden mb-4 rounded-xl shadow-sm border border-slate-100 bg-white">
+                                <div id="imageUploadIcon" class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 border border-slate-100 mb-2">
+                                    <i class="ph-duotone ph-image-square text-2xl text-slate-400"></i>
+                                </div>
+                                <div class="flex text-sm text-slate-600 justify-center">
+                                    <span class="relative font-bold text-brand-600 hover:text-brand-700">Klik untuk unggah foto</span>
+                                    <input id="formImage" type="file" class="sr-only" accept="image/*" onchange="handleImageUpload(event)">
+                                </div>
+                                <p class="text-xs font-medium text-slate-400">Format PNG/JPG maksimal 1 MB</p>
+                            </div>
+                        </label>
+                        <input type="hidden" id="formImageData" value="">
+                    </div>
+
+                    <!-- Identitas Dasar -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div class="sm:col-span-2">
+                            <label for="formName" class="block text-sm font-bold text-slate-700 mb-2">Nama Aset <span class="text-rose-500">*</span></label>
+                            <input type="text" id="formName" required class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm font-medium bg-white" placeholder="Contoh: Laptop MacBook Pro M3">
+                        </div>
+                        <div>
+                            <label for="formNoRegister" class="block text-sm font-bold text-slate-700 mb-2">Nomor Register <span class="text-rose-500">*</span></label>
+                            <input type="text" id="formNoRegister" required class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium bg-white" placeholder="Contoh: 0001">
+                        </div>
+                        <div>
+                            <label for="formKodeBarang" class="block text-sm font-bold text-slate-700 mb-2">Kode Barang <span class="text-rose-500">*</span></label>
+                            <input type="text" id="formKodeBarang" required class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium bg-white" placeholder="Contoh: 3.1.01.01">
+                        </div>
+                    </div>
+
+                    <hr class="border-slate-200/60">
+
+                    <!-- Kategori & Klasifikasi -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div>
+                            <label for="formCategory" class="block text-sm font-bold text-slate-700 mb-2">Kategori Utama <span class="text-rose-500">*</span></label>
+                            <select id="formCategory" onchange="updateSubCategories()" required class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium bg-white appearance-none cursor-pointer">
+                                <option value="" disabled selected>Pilih Kategori Utama</option>
+                                <option value="Tanah dan Bangunan">Tanah dan Bangunan</option>
+                                <option value="Peralatan dan Mesin">Peralatan dan Mesin</option>
+                                <option value="Aset Tak Berwujud">Aset Tak Berwujud</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="formSubCategory" class="block text-sm font-bold text-slate-700 mb-2">Sub Kategori <span class="text-rose-500">*</span></label>
+                            <select id="formSubCategory" required class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium bg-white appearance-none cursor-pointer">
+                                <option value="" disabled selected>Pilih Kategori Utama Dahulu</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="formNoPabrik" class="block text-sm font-bold text-slate-700 mb-2">No. Pabrik / Rangka / Mesin</label>
+                            <input type="text" id="formNoPabrik" class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium bg-white" placeholder="Kosongkan jika tidak ada">
+                        </div>
+                        <div>
+                            <label for="formNoPolisi" class="block text-sm font-bold text-slate-700 mb-2">No. Polisi (Kendaraan)</label>
+                            <input type="text" id="formNoPolisi" class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium bg-white" placeholder="Contoh: B 1234 CD">
+                        </div>
+                    </div>
+
+                    <hr class="border-slate-200/60">
+
+                    <!-- Pembelian & Kuantitas -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        <div class="lg:col-span-2">
+                            <label for="formAsalUsul" class="block text-sm font-bold text-slate-700 mb-2">Asal Usul <span class="text-rose-500">*</span></label>
+                            <select id="formAsalUsul" required class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium bg-white appearance-none cursor-pointer">
+                                <option value="" disabled selected>Pilih Asal Usul</option>
+                                <option value="Pembelian">Pembelian</option>
+                                <option value="Hibah">Hibah</option>
+                                <option value="Sewa">Sewa</option>
+                                <option value="Pinjam">Pinjam</option>
+                                <option value="Guna Usaha">Guna Usaha</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="formQty" class="block text-sm font-bold text-slate-700 mb-2">Kuantitas <span class="text-rose-500">*</span></label>
+                            <input type="number" id="formQty" required min="1" class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium bg-white" placeholder="0">
+                        </div>
+                        <div>
+                            <label for="formCondition" class="block text-sm font-bold text-slate-700 mb-2">Kondisi <span class="text-rose-500">*</span></label>
+                            <select id="formCondition" required class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium bg-white appearance-none cursor-pointer">
+                                <option value="" disabled selected>Pilih Kategori Utama Dahulu</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div>
+                            <label for="formTahun" class="block text-sm font-bold text-slate-700 mb-2">Tahun Pembelian <span class="text-rose-500">*</span></label>
+                            <input type="number" id="formTahun" required min="1900" max="2100" class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium bg-white text-slate-700" placeholder="Contoh: 2024">
+                        </div>
+                        <div>
+                            <label for="formPrice" class="block text-sm font-bold text-slate-700 mb-2">Harga Satuan (Rp) <span class="text-rose-500">*</span></label>
+                            <input type="number" id="formPrice" required min="0" class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium bg-white" placeholder="Contoh: 15000000">
+                        </div>
+                        <div>
+                            <label for="formLocation" class="block text-sm font-bold text-slate-700 mb-2">Lokasi / Penempatan</label>
+                            <input type="text" id="formLocation" class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-sm font-medium bg-white" placeholder="Contoh: Ruang IT">
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="px-8 py-5 border-t border-slate-100 bg-white flex justify-end gap-3 z-10 modal-action-buttons">
+                <button type="button" onclick="closeModal()" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+                    Batal
+                </button>
+                <button type="button" onclick="saveAsset()" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-glow transition-all">
+                    <span>Simpan Data</span>
+                    <i class="ph-bold ph-floppy-disk"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DETAIL VIEW MODAL (NEW) -->
+    <div id="detailModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 hidden opacity-0 transition-all pointer-events-none">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden transform scale-95 transition-transform pointer-events-auto border border-white/20">
+            
+            <!-- Detail Print Header (Only visible when printing) -->
+            <div class="hidden detail-print-header w-full p-8 border-b-2 border-slate-800 text-center bg-white mb-6">
+                <h1 class="text-2xl font-extrabold text-slate-900 uppercase tracking-widest">Detail Informasi Aset</h1>
+                <p class="text-sm font-medium text-slate-500 mt-1">Dicetak pada: <span id="detailPrintTime"></span></p>
+            </div>
+
+            <div class="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-white/50 backdrop-blur-xl z-10 sticky top-0 modal-action-buttons">
+                <h3 class="text-xl font-extrabold text-slate-800 flex items-center gap-3">
+                    <div class="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                        <i class="ph-duotone ph-info" class="text-lg"></i>
+                    </div>
+                    <span>Detail Aset</span>
+                </h3>
+                <button type="button" onclick="closeDetailModal()" class="text-slate-400 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 p-2 rounded-xl transition-colors">
+                    <i class="ph-bold ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <div class="px-8 py-6 overflow-y-auto no-scrollbar bg-slate-50/30 flex-grow" id="detailModalBody">
+                <div class="flex flex-col md:flex-row gap-8">
+                    <!-- Image Section -->
+                    <div class="w-full md:w-1/3 flex-shrink-0">
+                        <div class="bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+                            <img id="detailImage" src="" alt="Foto Aset" class="w-full h-auto object-cover rounded-xl bg-slate-50 hidden">
+                            <div id="detailNoImagePlaceholder" class="w-full aspect-square flex flex-col items-center justify-center bg-slate-50 rounded-xl text-slate-400 border border-dashed border-slate-200">
+                                <i class="ph-duotone ph-image-square text-4xl mb-2"></i>
+                                <span class="text-sm font-medium">Tidak ada foto</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <span id="detailStatusBadge" class="inline-block"></span>
+                        </div>
+                    </div>
+
+                    <!-- Info Grid Section -->
+                    <div class="w-full md:w-2/3">
+                        <div class="mb-6">
+                            <p class="text-xs font-bold text-brand-600 uppercase tracking-wider mb-1" id="detailIdDisplay"></p>
+                            <h2 class="text-2xl font-extrabold text-slate-800" id="detailNameDisplay"></h2>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-8 text-sm">
+                            <!-- Column 1 -->
+                            <div><p class="text-slate-500 font-medium mb-0.5">Kategori Utama</p><p class="font-bold text-slate-800" id="detailCategory"></p></div>
+                            <div><p class="text-slate-500 font-medium mb-0.5">Sub Kategori</p><p class="font-bold text-slate-800" id="detailSubCategory"></p></div>
+                            
+                            <div><p class="text-slate-500 font-medium mb-0.5">No. Register</p><p class="font-bold text-slate-800" id="detailRegister"></p></div>
+                            <div><p class="text-slate-500 font-medium mb-0.5">Kode Barang</p><p class="font-bold text-slate-800" id="detailKode"></p></div>
+                            
+                            <div><p class="text-slate-500 font-medium mb-0.5">No. Pabrik / Mesin</p><p class="font-bold text-slate-800" id="detailPabrik"></p></div>
+                            <div><p class="text-slate-500 font-medium mb-0.5">No. Polisi</p><p class="font-bold text-slate-800" id="detailPolisi"></p></div>
+                            
+                            <div><p class="text-slate-500 font-medium mb-0.5">Asal Usul</p><p class="font-bold text-slate-800" id="detailAsalUsul"></p></div>
+                            <div><p class="text-slate-500 font-medium mb-0.5">Tahun Pembelian</p><p class="font-bold text-slate-800" id="detailTahun"></p></div>
+
+                            <div><p class="text-slate-500 font-medium mb-0.5">Lokasi / Penempatan</p><p class="font-bold text-slate-800" id="detailLocation"></p></div>
+                            <div><p class="text-slate-500 font-medium mb-0.5">Kuantitas</p><p class="font-bold text-slate-800"><span id="detailQty"></span> Unit</p></div>
+                        </div>
+
+                        <div class="mt-8 bg-brand-50/50 rounded-2xl p-5 border border-brand-100 flex flex-col sm:flex-row justify-between gap-4">
+                            <div>
+                                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Harga Satuan</p>
+                                <p class="text-lg font-bold text-slate-800" id="detailPrice"></p>
+                            </div>
+                            <div class="sm:text-right">
+                                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Nilai Aset</p>
+                                <p class="text-xl font-extrabold text-brand-600" id="detailTotalValue"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-8 py-5 border-t border-slate-100 bg-white flex justify-end gap-3 z-10 modal-action-buttons">
+                <button type="button" onclick="closeDetailModal()" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+                    Tutup
+                </button>
+                <button type="button" onclick="printSingleDetail()" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 shadow-glow transition-all">
+                    <span>Cetak Detail</span>
+                    <i class="ph-bold ph-printer"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div id="deleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 hidden opacity-0 transition-all pointer-events-none">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm flex flex-col overflow-hidden transform scale-95 transition-transform pointer-events-auto border border-white">
+            <div class="px-6 py-8 text-center relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-rose-50 rounded-full opacity-50"></div>
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-2xl bg-rose-100 mb-5 relative shadow-inner text-rose-500">
+                    <i class="ph-duotone ph-trash text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-extrabold text-slate-800 mb-2">Hapus Aset?</h3>
+                <p class="text-sm text-slate-500 font-medium" id="deleteModalText"></p>
+                <input type="hidden" id="deleteTargetId">
+            </div>
+            <div class="px-6 py-5 bg-slate-50 flex gap-3 border-t border-slate-100">
+                <button type="button" onclick="closeDeleteModal()" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm">Batal</button>
+                <button type="button" onclick="confirmDelete()" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-200 transition-colors">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Lightbox -->
+    <div id="imageViewerModal" class="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6 hidden opacity-0 transition-opacity pointer-events-none print:hidden">
+        <div class="absolute inset-0 bg-slate-900/95 backdrop-blur-md pointer-events-auto" onclick="closeImageModal()"></div>
+        <div class="relative z-10 w-full max-w-5xl max-h-[90vh] flex flex-col items-center justify-center pointer-events-none">
+            <div class="relative group">
+                <img id="zoomedImage" src="" alt="Zoomed Asset" class="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl pointer-events-auto transform scale-95 transition-transform ring-1 ring-white/10 bg-black/20">
+                <button onclick="closeImageModal()" class="absolute -top-4 -right-4 text-slate-400 hover:text-white bg-slate-800 hover:bg-rose-500 rounded-full h-10 w-10 flex items-center justify-center transition-all shadow-xl pointer-events-auto opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100">
+                    <i class="ph-bold ph-x text-lg"></i>
+                </button>
+            </div>
+            <div class="mt-5 pointer-events-auto text-center">
+                <span id="zoomedImageTitle" class="text-white font-bold text-lg px-4 py-2 bg-slate-800/50 rounded-full backdrop-blur-sm border border-white/10"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Structure & Logic
+        let assets = [];
+        let currentMode = 'add';
+        const LOCAL_STORAGE_KEY = 'kantor_assets_db_v4'; // Incremented key to ensure fresh schema
+
+        const subKategoriMap = {
+            'Tanah dan Bangunan': ['Tanah', 'Bangunan'],
+            'Peralatan dan Mesin': ['Kendaraan', 'Peralatan Komputer TI', 'Alat Kantor dan Rumah Tangga', 'Alat Komunikasi dan Studio'],
+            'Aset Tak Berwujud': ['Kajian', 'Lisensi Perangkat Lunak', 'Aplikasi', 'Hak Cipta']
+        };
+
+        const initialData = [
+            { 
+                id: "AST-2026-001", 
+                noRegister: "0001", 
+                kodeBarang: "3.1.02.01", 
+                noPabrik: "M3-2024-X", 
+                noPolisi: "",
+                name: "Laptop MacBook Pro M3", 
+                category: "Peralatan dan Mesin", 
+                subCategory: "Peralatan Komputer TI",
+                asalUsul: "Pembelian",
+                qty: 2, 
+                price: 25000000, 
+                condition: "Baik", 
+                location: "Ruang IT / Lantai 2", 
+                tahun: "2026",
+                image: null
+            },
+            { 
+                id: "AST-2026-002", 
+                noRegister: "0015", 
+                kodeBarang: "3.1.04.05", 
+                noPabrik: "HONDA-2991", 
+                noPolisi: "KT 1234 A",
+                name: "Motor Operasional Honda Vario", 
+                category: "Peralatan dan Mesin", 
+                subCategory: "Kendaraan",
+                asalUsul: "Hibah",
+                qty: 1, 
+                price: 22000000, 
+                condition: "Baik", 
+                location: "Parkiran Kantor", 
+                tahun: "2024",
+                image: null
+            }
+        ];
+
+        document.getElementById('currentDateDisplay').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('printDateDisplay').textContent = 'Diperbarui: ' + new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
+        document.getElementById('detailPrintTime').textContent = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
+
+        function initApp() {
+            const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (storedData) {
+                assets = JSON.parse(storedData);
+            } else {
+                assets = [...initialData];
+                saveToLocalStorage();
+            }
+            populateYearFilter();
+            renderTable();
+            setupEventListeners();
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(assets));
+            populateYearFilter();
+            updateMetrics();
+        }
+
+        function generateId() {
+            const year = new Date().getFullYear();
+            let maxNum = 0;
+            assets.forEach(asset => {
+                if(asset.id.startsWith(`AST-${year}-`)) {
+                    const numPart = parseInt(asset.id.split('-')[2]);
+                    if(!isNaN(numPart) && numPart > maxNum) maxNum = numPart;
+                }
+            });
+            return `AST-${year}-${(maxNum + 1).toString().padStart(3, '0')}`;
+        }
+
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka || 0);
+        }
+
+        function updateSubCategories(selectedValue = null, selectedCondition = null) {
+            const cat = document.getElementById('formCategory').value;
+            const sub = document.getElementById('formSubCategory');
+            const cond = document.getElementById('formCondition');
+            
+            // Handle Sub Category
+            sub.innerHTML = '<option value="" disabled selected>Pilih Sub Kategori</option>';
+            
+            if(subKategoriMap[cat]) {
+                subKategoriMap[cat].forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.textContent = item;
+                    sub.appendChild(opt);
+                });
+            }
+
+            if(selectedValue) {
+                sub.value = selectedValue;
+            }
+
+            // Handle Condition Dynamic Options
+            cond.innerHTML = '<option value="" disabled selected>Pilih Status</option>';
+            let condOptions = [];
+            
+            if (cat === 'Aset Tak Berwujud') {
+                condOptions = ['Aktif', 'Kadaluwarsa (Expired)'];
+            } else if (cat) {
+                condOptions = ['Baik', 'Rusak Ringan', 'Rusak Berat'];
+            }
+
+            condOptions.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                opt.textContent = item;
+                cond.appendChild(opt);
+            });
+
+            if (selectedCondition) {
+                cond.value = selectedCondition;
+            }
+        }
+
+        function updateFilterSubCategory() {
+            const cat = document.getElementById('filterCategory').value;
+            const sub = document.getElementById('filterSubCategory');
+            const currentSub = sub.value; 
+
+            sub.innerHTML = '<option value="all">Semua Sub Kategori</option>';
+
+            if (cat !== 'all' && subKategoriMap[cat]) {
+                subKategoriMap[cat].forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.textContent = item;
+                    sub.appendChild(opt);
+                });
+            }
+            
+            if ([...sub.options].some(o => o.value === currentSub)) {
+                sub.value = currentSub;
+            } else {
+                sub.value = 'all';
+            }
+            handleSearchAndFilter();
+        }
+
+        function populateYearFilter() {
+            const yearSelect = document.getElementById('filterYear');
+            const currentSelected = yearSelect.value;
+            
+            const years = [...new Set(assets.map(a => a.tahun))].sort((a,b) => b - a);
+            
+            yearSelect.innerHTML = '<option value="all">Semua Tahun Pembelian</option>';
+            years.forEach(year => {
+                if(year) yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
+            });
+            
+            if([...yearSelect.options].some(o => o.value === currentSelected)) {
+                yearSelect.value = currentSelected;
+            }
+        }
+
+        function getCategoryBadge(category, subCategory) {
+            const styles = {
+                'Tanah dan Bangunan': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
+                'Peralatan dan Mesin': 'bg-indigo-50 text-indigo-700 ring-indigo-600/20',
+                'Aset Tak Berwujud': 'bg-purple-50 text-purple-700 ring-purple-600/20',
+            };
+            const style = styles[category] || 'bg-slate-50 text-slate-700 ring-slate-600/20';
+            return `
+            <div class="flex flex-col items-start gap-1">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100">${category}</span>
+                <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold tracking-wide ring-1 ring-inset ${style}">${subCategory || category}</span>
+            </div>`;
+        }
+
+        function getConditionBadge(condition) {
+            let dot = '', style = '';
+            switch(condition) {
+                case 'Baik': dot = 'bg-emerald-500'; style = 'bg-emerald-50 text-emerald-700 ring-emerald-500/20'; break;
+                case 'Rusak Ringan': dot = 'bg-amber-500'; style = 'bg-amber-50 text-amber-700 ring-amber-500/20'; break;
+                case 'Rusak Berat': dot = 'bg-rose-500'; style = 'bg-rose-50 text-rose-700 ring-rose-500/20'; break;
+                case 'Aktif': dot = 'bg-blue-500'; style = 'bg-blue-50 text-blue-700 ring-blue-500/20'; break;
+                case 'Kadaluwarsa (Expired)': dot = 'bg-slate-500'; style = 'bg-slate-50 text-slate-700 ring-slate-500/20'; break;
+                default: dot = 'bg-slate-500'; style = 'bg-slate-50 text-slate-700 ring-slate-500/20'; break;
+            }
+            return `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold ring-1 ring-inset ${style}">
+                <span class="w-1.5 h-1.5 rounded-full ${dot} shadow-sm"></span>${condition}</span>`;
+        }
+
+        function renderTable(dataToRender = assets) {
+            const tbody = document.getElementById('inventoryTableBody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+
+            if (dataToRender.length === 0) {
+                tbody.parentElement.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                tbody.parentElement.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+
+                dataToRender.forEach((asset, index) => {
+                    const tr = document.createElement('tr');
+                    tr.className = `hover:bg-slate-50/80 transition-colors group animate-fade-in-up bg-white`;
+                    tr.style.animationDelay = `${index * 30}ms`;
+                    
+                    const identitasKhusus = [
+                        asset.noPolisi ? `Nopol: ${asset.noPolisi}` : null,
+                        asset.noPabrik ? `No. Pabrik: ${asset.noPabrik}` : null
+                    ].filter(Boolean).join(' | ');
+
+                    tr.innerHTML = `
+                        <td class="px-5 py-4 align-top whitespace-nowrap">
+                            <span class="text-xs font-bold text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-100">${asset.id}</span>
+                            <div class="mt-2 text-[11px] font-medium text-slate-500">
+                                <div>Asal: <span class="font-bold text-slate-700">${asset.asalUsul || '-'}</span></div>
+                                <div>Tahun: <span class="font-bold text-slate-700">${asset.tahun}</span></div>
+                            </div>
+                        </td>
+                        <td class="px-5 py-4">
+                            <div class="flex items-start gap-4">
+                                <div class="h-16 w-16 flex-shrink-0 rounded-2xl bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-100 shadow-sm relative group-hover:border-brand-200 transition-colors mt-1">
+                                    ${asset.image ? `<img src="${asset.image}" alt="Img" class="h-full w-full object-cover cursor-pointer hover:scale-110 transition-transform duration-500" onclick="openImageModal('${asset.image}', '${asset.name}')">` : `<i class="ph-duotone ph-image text-slate-300 text-2xl"></i>`}
+                                </div>
+                                <div>
+                                    <div class="text-sm font-bold text-slate-800 hover:text-brand-600 transition-colors leading-tight cursor-pointer" onclick="openDetailModal('${asset.id}')" title="Klik untuk lihat detail">${asset.name}</div>
+                                    <div class="text-xs text-slate-500 mt-1.5 space-y-0.5">
+                                        <div><span class="font-semibold text-slate-400">Reg:</span> ${asset.noRegister || '-'} <span class="mx-1 text-slate-300">|</span> <span class="font-semibold text-slate-400">Kode:</span> ${asset.kodeBarang || '-'}</div>
+                                        ${identitasKhusus ? `<div class="text-brand-600 font-medium">${identitasKhusus}</div>` : ''}
+                                        <div class="flex items-center gap-1"><i class="ph-duotone ph-map-pin text-slate-400"></i> ${asset.location || 'Tidak ada lokasi'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-5 py-4 whitespace-nowrap align-top">
+                            ${getCategoryBadge(asset.category, asset.subCategory)}
+                        </td>
+                        <td class="px-5 py-4 whitespace-nowrap text-right align-top">
+                            <span class="text-sm font-semibold text-slate-700">${formatRupiah(asset.price)}</span>
+                        </td>
+                        <td class="px-5 py-4 whitespace-nowrap text-center align-top">
+                            <span class="text-sm font-extrabold text-slate-700 bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">${asset.qty}</span>
+                        </td>
+                        <td class="px-5 py-4 whitespace-nowrap align-top">
+                            ${getConditionBadge(asset.condition)}
+                        </td>
+                        <td class="px-5 py-4 whitespace-nowrap text-right print:hidden align-top">
+                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                <button onclick="openDetailModal('${asset.id}')" class="p-2 text-indigo-500 hover:bg-indigo-50 rounded-xl" title="Lihat Detail"><i class="ph-duotone ph-eye text-lg"></i></button>
+                                <button onclick="openModal('edit', '${asset.id}')" class="p-2 text-brand-600 hover:bg-brand-50 rounded-xl" title="Edit"><i class="ph-duotone ph-pencil-simple text-lg"></i></button>
+                                <button onclick="openDeleteModal('${asset.id}')" class="p-2 text-rose-500 hover:bg-rose-50 rounded-xl" title="Hapus"><i class="ph-duotone ph-trash text-lg"></i></button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        function updateMetrics() {
+            const totalQty = assets.reduce((sum, asset) => sum + parseInt(asset.qty || 0), 0);
+            const goodQty = assets.filter(a => a.condition === 'Baik' || a.condition === 'Aktif').reduce((sum, a) => sum + parseInt(a.qty || 0), 0);
+            const repairQty = assets.filter(a => a.condition !== 'Baik' && a.condition !== 'Aktif').reduce((sum, a) => sum + parseInt(a.qty || 0), 0);
+
+            animateValue("metricTotal", parseInt(document.getElementById("metricTotal").innerText) || 0, totalQty, 500);
+            animateValue("metricGood", parseInt(document.getElementById("metricGood").innerText) || 0, goodQty, 500);
+            animateValue("metricRepair", parseInt(document.getElementById("metricRepair").innerText) || 0, repairQty, 500);
+        }
+
+        function animateValue(id, start, end, duration) {
+            if (start === end) { document.getElementById(id).innerHTML = end; return; }
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                document.getElementById(id).innerHTML = Math.floor((1 - Math.pow(1 - progress, 4)) * (end - start) + start);
+                if (progress < 1) window.requestAnimationFrame(step);
+                else document.getElementById(id).innerHTML = end;
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function handleSearchAndFilter() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('filterCategory').value;
+            const subCategory = document.getElementById('filterSubCategory').value;
+            const condition = document.getElementById('filterCondition').value;
+            const yearFilter = document.getElementById('filterYear').value;
+
+            const filtered = assets.filter(a => {
+                const searchStr = `${a.name} ${a.id} ${a.noRegister} ${a.kodeBarang} ${a.noPolisi}`.toLowerCase();
+                const itemYear = a.tahun ? a.tahun.toString() : '';
+                
+                return (searchStr.includes(search)) &&
+                       (category === 'all' || a.category === category) &&
+                       (subCategory === 'all' || a.subCategory === subCategory) &&
+                       (condition === 'all' || a.condition === condition) &&
+                       (yearFilter === 'all' || itemYear === yearFilter);
+            });
+            renderTable(filtered);
+        }
+
+        function setupEventListeners() {
+            document.getElementById('filterCategory').addEventListener('change', updateFilterSubCategory);
+            
+            ['searchInput', 'filterCategory', 'filterSubCategory', 'filterCondition', 'filterYear'].forEach(id => {
+                document.getElementById(id).addEventListener(id === 'searchInput' ? 'input' : 'change', handleSearchAndFilter);
+            });
+        }
+
+        function openModal(mode, id = null) {
+            const modal = document.getElementById('formModal');
+            const backdrop = document.getElementById('modalBackdrop');
+            document.getElementById('assetForm').reset();
+            updateSubCategories(); 
+            currentMode = mode;
+            
+            if (mode === 'add') {
+                document.getElementById('modalTitle').querySelector('span').textContent = 'Tambah Aset Baru';
+                document.getElementById('formId').value = '';
+                document.getElementById('formTahun').value = new Date().getFullYear();
+                
+                document.getElementById('formImage').value = '';
+                document.getElementById('formImageData').value = '';
+                document.getElementById('imagePreview').classList.add('hidden');
+                document.getElementById('imageUploadIcon').classList.remove('hidden');
+            } else if (mode === 'edit' && id) {
+                document.getElementById('modalTitle').querySelector('span').textContent = 'Edit Data Aset';
+                const a = assets.find(x => x.id === id);
+                if (a) {
+                    document.getElementById('formId').value = a.id;
+                    document.getElementById('formName').value = a.name;
+                    document.getElementById('formNoRegister').value = a.noRegister || '';
+                    document.getElementById('formKodeBarang').value = a.kodeBarang || '';
+                    document.getElementById('formNoPabrik').value = a.noPabrik || '';
+                    document.getElementById('formNoPolisi').value = a.noPolisi || '';
+                    document.getElementById('formCategory').value = a.category;
+                    
+                    updateSubCategories(a.subCategory, a.condition);
+                    
+                    document.getElementById('formAsalUsul').value = a.asalUsul || '';
+                    document.getElementById('formQty').value = a.qty;
+                    document.getElementById('formPrice').value = a.price || '';
+                    // document.getElementById('formCondition').value = a.condition; // Ditangani di updateSubCategories
+                    document.getElementById('formLocation').value = a.location;
+                    document.getElementById('formTahun').value = a.tahun;
+                    
+                    if (a.image) {
+                        document.getElementById('formImageData').value = a.image;
+                        document.getElementById('imagePreview').src = a.image;
+                        document.getElementById('imagePreview').classList.remove('hidden');
+                        document.getElementById('imageUploadIcon').classList.add('hidden');
+                    } else {
+                        document.getElementById('formImage').value = '';
+                        document.getElementById('formImageData').value = '';
+                        document.getElementById('imagePreview').classList.add('hidden');
+                        document.getElementById('imageUploadIcon').classList.remove('hidden');
+                    }
+                }
+            }
+            
+            backdrop.classList.remove('hidden'); modal.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0'); modal.classList.remove('opacity-0');
+                modal.querySelector('.bg-white').classList.replace('scale-95', 'scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('formModal');
+            const backdrop = document.getElementById('modalBackdrop');
+            backdrop.classList.add('opacity-0'); modal.classList.add('opacity-0');
+            modal.querySelector('.bg-white').classList.replace('scale-100', 'scale-95');
+            setTimeout(() => { backdrop.classList.add('hidden'); modal.classList.add('hidden'); }, 300);
+        }
+
+        // NEW: Detail Modal Logic
+        function openDetailModal(id) {
+            const asset = assets.find(x => x.id === id);
+            if (!asset) return;
+
+            // Populate Image
+            const imgEl = document.getElementById('detailImage');
+            const placeholder = document.getElementById('detailNoImagePlaceholder');
+            if (asset.image) {
+                imgEl.src = asset.image;
+                imgEl.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            } else {
+                imgEl.src = '';
+                imgEl.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+            }
+
+            // Populate Text Data
+            document.getElementById('detailIdDisplay').textContent = asset.id;
+            document.getElementById('detailNameDisplay').textContent = asset.name;
+            document.getElementById('detailCategory').textContent = asset.category;
+            document.getElementById('detailSubCategory').textContent = asset.subCategory || '-';
+            
+            document.getElementById('detailRegister').textContent = asset.noRegister || '-';
+            document.getElementById('detailKode').textContent = asset.kodeBarang || '-';
+            document.getElementById('detailPabrik').textContent = asset.noPabrik || '-';
+            document.getElementById('detailPolisi').textContent = asset.noPolisi || '-';
+            
+            document.getElementById('detailAsalUsul').textContent = asset.asalUsul || '-';
+            document.getElementById('detailLocation').textContent = asset.location || '-';
+            document.getElementById('detailQty').textContent = asset.qty;
+            document.getElementById('detailStatusBadge').innerHTML = getConditionBadge(asset.condition);
+            
+            document.getElementById('detailTahun').textContent = asset.tahun || '-';
+
+            // Format Prices
+            document.getElementById('detailPrice').textContent = formatRupiah(asset.price);
+            document.getElementById('detailTotalValue').textContent = formatRupiah(asset.price * asset.qty);
+            
+            // Show Modal
+            const modal = document.getElementById('detailModal');
+            const backdrop = document.getElementById('modalBackdrop');
+            backdrop.classList.remove('hidden'); modal.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0'); modal.classList.remove('opacity-0');
+                modal.querySelector('.bg-white').classList.replace('scale-95', 'scale-100');
+            }, 10);
+        }
+
+        function closeDetailModal() {
+            const modal = document.getElementById('detailModal');
+            const backdrop = document.getElementById('modalBackdrop');
+            backdrop.classList.add('opacity-0'); modal.classList.add('opacity-0');
+            modal.querySelector('.bg-white').classList.replace('scale-100', 'scale-95');
+            setTimeout(() => { backdrop.classList.add('hidden'); modal.classList.add('hidden'); }, 300);
+        }
+
+        function printSingleDetail() {
+            // Update time indicator
+            document.getElementById('detailPrintTime').textContent = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
+            
+            // Add class to body to trigger print CSS mode
+            document.body.classList.add('print-detail-mode');
+            
+            // Print window
+            window.print();
+            
+            // Remove class after printing dialog closes
+            setTimeout(() => {
+                document.body.classList.remove('print-detail-mode');
+            }, 500);
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            // 1MB Limit
+            if (file.size > 1 * 1024 * 1024) {
+                showNotification('Ukuran file maksimal 1 MB!', 'error');
+                event.target.value = ''; return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('formImageData').value = e.target.result;
+                document.getElementById('imagePreview').src = e.target.result;
+                document.getElementById('imagePreview').classList.remove('hidden');
+                document.getElementById('imageUploadIcon').classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveAsset() {
+            const fields = ['formName', 'formNoRegister', 'formKodeBarang', 'formCategory', 'formSubCategory', 'formAsalUsul', 'formQty', 'formPrice', 'formCondition', 'formTahun'];
+            let isValid = true;
+            
+            fields.forEach(id => {
+                const el = document.getElementById(id);
+                if(!el.value) {
+                    el.classList.add('border-rose-500', 'ring-rose-200');
+                    setTimeout(() => el.classList.remove('border-rose-500', 'ring-rose-200'), 2500);
+                    isValid = false;
+                }
+            });
+            if (!isValid) return showNotification('Lengkapi semua kolom wajib (*)', 'error');
+
+            const newAsset = {
+                id: currentMode === 'add' ? generateId() : document.getElementById('formId').value,
+                name: document.getElementById('formName').value.trim(),
+                noRegister: document.getElementById('formNoRegister').value.trim(),
+                kodeBarang: document.getElementById('formKodeBarang').value.trim(),
+                noPabrik: document.getElementById('formNoPabrik').value.trim(),
+                noPolisi: document.getElementById('formNoPolisi').value.trim(),
+                category: document.getElementById('formCategory').value,
+                subCategory: document.getElementById('formSubCategory').value,
+                asalUsul: document.getElementById('formAsalUsul').value,
+                qty: parseInt(document.getElementById('formQty').value),
+                price: parseInt(document.getElementById('formPrice').value),
+                condition: document.getElementById('formCondition').value,
+                location: document.getElementById('formLocation').value.trim(),
+                tahun: document.getElementById('formTahun').value.trim(),
+                image: document.getElementById('formImageData').value || null
+            };
+
+            if (currentMode === 'add') assets.unshift(newAsset);
+            else {
+                const index = assets.findIndex(a => a.id === newAsset.id);
+                if (index !== -1) assets[index] = newAsset;
+            }
+
+            saveToLocalStorage();
+            handleSearchAndFilter(); 
+            closeModal();
+            showNotification(currentMode === 'add' ? 'Aset berhasil ditambahkan' : 'Data berhasil diperbarui', 'success');
+        }
+
+        function openDeleteModal(id) {
+            const asset = assets.find(a => a.id === id);
+            if(!asset) return;
+            document.getElementById('deleteTargetId').value = id;
+            document.getElementById('deleteModalText').innerHTML = `Hapus <strong>${asset.name}</strong> secara permanen?`;
+            
+            const modal = document.getElementById('deleteModal'), backdrop = document.getElementById('modalBackdrop');
+            backdrop.classList.remove('hidden'); modal.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0'); modal.classList.remove('opacity-0');
+                modal.querySelector('.bg-white').classList.replace('scale-95', 'scale-100');
+            }, 10);
+        }
+
+        function closeDeleteModal() {
+            const modal = document.getElementById('deleteModal'), backdrop = document.getElementById('modalBackdrop');
+            backdrop.classList.add('opacity-0'); modal.classList.add('opacity-0');
+            modal.querySelector('.bg-white').classList.replace('scale-100', 'scale-95');
+            setTimeout(() => { backdrop.classList.add('hidden'); modal.classList.add('hidden'); }, 300);
+        }
+
+        function confirmDelete() {
+            const id = document.getElementById('deleteTargetId').value;
+            assets = assets.filter(a => a.id !== id);
+            saveToLocalStorage(); handleSearchAndFilter(); closeDeleteModal();
+            showNotification('Data aset dihapus', 'success');
+        }
+
+        function showNotification(message, type = 'success') {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'fixed bottom-6 right-6 z-[80] flex flex-col gap-3 pointer-events-none';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            let icon = type === 'success' ? '<i class="ph-fill ph-check-circle text-emerald-400 text-xl"></i>' : '<i class="ph-fill ph-warning-circle text-rose-400 text-xl"></i>';
+            toast.className = `flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl bg-slate-900 text-white transform transition-all duration-400 translate-y-full opacity-0 pointer-events-auto border ${type==='error'?'border-rose-500/50':'border-slate-700'}`;
+            toast.innerHTML = `${icon} <span class="text-sm font-medium tracking-wide">${message}</span>`;
+            container.appendChild(toast);
+            void toast.offsetWidth;
+            toast.classList.remove('translate-y-full', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 400);
+            }, 4000);
+        }
+
+        function openImageModal(src, title) {
+            if(!src) return;
+            const modal = document.getElementById('imageViewerModal');
+            document.getElementById('zoomedImage').src = src;
+            document.getElementById('zoomedImageTitle').textContent = title;
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('img').classList.replace('scale-95', 'scale-100');
+            }, 10);
+        }
+
+        function closeImageModal() {
+            const modal = document.getElementById('imageViewerModal');
+            modal.classList.add('opacity-0');
+            modal.querySelector('img').classList.replace('scale-100', 'scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); document.getElementById('zoomedImage').src = ''; }, 300);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                ['imageViewerModal', 'deleteModal', 'detailModal', 'formModal'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && !el.classList.contains('hidden')) {
+                        if(id==='imageViewerModal') closeImageModal();
+                        else if(id==='deleteModal') closeDeleteModal();
+                        else if(id==='detailModal') closeDetailModal();
+                        else if(id==='formModal') closeModal();
+                    }
+                });
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
