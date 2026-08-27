@@ -16,3 +16,4 @@ Aplikasi manajemen inventaris aset kantor. Data tersimpan di **Postgres** (Neon 
 - Database: Postgres — skema di `migrations/0002_assets.sql`
 
 Deploy ke Vercel memakai `DATABASE_URL` Postgres. Migrasi dijalankan saat `npm run build`.
+"# tester" 
